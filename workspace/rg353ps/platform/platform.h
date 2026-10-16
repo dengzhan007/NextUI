@@ -127,6 +127,6 @@ extern int needs_portrait_sdl;
 #define MUTE_VOLUME_RAW 0
 #define SND_CLOSE_ON_SLEEP 0
 #define SCREEN_FPS      panel_fps
-#define MAX_LIGHTS      0
+#define MAX_LIGHTS      2  // led.c initializes two profile slots even on boards with no RGB LEDs
 
 #endif
