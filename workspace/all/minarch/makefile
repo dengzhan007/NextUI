@@ -81,7 +81,11 @@ endif
 	cp -L $(PREFIX)/lib/liblzma.so.5 build/$(PLATFORM)
 	cp -L $(PREFIX)/lib/libzstd.so.1 build/$(PLATFORM)
 	cp -L $(PREFIX)/lib/liblz4.so.1 build/$(PLATFORM)
-	cp -L $(PREFIX_LOCAL)/lib/libchdr.so build/$(PLATFORM)
+	@if [ -e libchdr/build/$(PLATFORM)/libchdr.so.0 ]; then \
+	  cp -L libchdr/build/$(PLATFORM)/libchdr.so.0 build/$(PLATFORM)/; \
+	else \
+	  cp -L $(PREFIX_LOCAL)/lib/libchdr.so build/$(PLATFORM)/libchdr.so.0; \
+	fi
 	$(CC) $(SOURCE) -o $(PRODUCT) $(CFLAGS) $(LDFLAGS)
 endif
 libretro-common:
