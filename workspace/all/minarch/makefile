@@ -53,48 +53,6 @@ LDFLAGS  += -llz4
 
 # SaveRAM support
 ifeq ($(PLATFORM), desktop)
-ifeq ($(UNAME_S),Linux)
-CFLAGS += `pkg-config --cflags libzip`
-LDFLAGS += `pkg-config --libs libzip` -lz
-else
-LDFLAGS += -lzip -lz
-endif # Linux
-else # all handheld platforms
-LDFLAGS	 +=  -Llibretro-common -lsrm -lzip -lz
-CFLAGS   += -DHAS_SRM
-LDFLAGS +=  -lasound
-endif
-
-# RA support: rcheevos and libchdr linking
-ifneq (,$(filter $(PLATFORM),tg5040 tg5050 h700 my355 desktop))
-LDFLAGS += -lrcheevos -lchdr -lcrypto
-CFLAGS += -DRC_CLIENT_SUPPORTS_HASH -DHAS_CHEEVOS -DHAS_CHDR
-ifeq ($(PLATFORM), desktop)
-# Desktop needs rpath for local shared library lookup
-LDFLAGS += -Wl,-rpath,'$$ORIGIN'
-endif
-endif
-
-# Sanitizers
-ifeq ($(PLATFORM), desktop)
-ifeq ($(TSAN), 1)
-CFLAGS  += -fsanitize=thread
-LDFLAGS += -ltsan
-endif
-ifeq ($(ASAN), 1)
-CFLAGS  += -fsanitize=address -fno-common -fno-omit-frame-pointer
-LDFLAGS += -lasan
-endif
-endif
-
-AR=$(CROSS_COMPILE)ar
-ARFLAGS=rc
-
-BUILD_DATE!=date +%Y.%m.%d
-BUILD_HASH!=cat ../../hash.txt
-CFLAGS += -DBUILD_DATE=\"${BUILD_DATE}\" -DBUILD_HASH=\"${BUILD_HASH}\"
-
-ifeq ($(PLATFORM), desktop)
 all: clean libretro-common rcheevos libchdr $(PREFIX_LOCAL)/include/msettings.h
 	mkdir -p build/$(PLATFORM)
 	$(CC) $(SOURCE) -o $(PRODUCT) $(CFLAGS) $(LDFLAGS)
@@ -109,11 +67,6 @@ ifeq ($(PLATFORM), my355)
 	cp -L $(PREFIX)/lib/libsqlite3.so build/$(PLATFORM)
 	cp -L $(PREFIX)/lib/libffi.so.7 build/$(PLATFORM)
 	cp -L $(PREFIX)/lib/libtinyalsa.so.2 build/$(PLATFORM)
-else ifeq ($(PLATFORM), rg353ps)
-# RG353PS BaseOS: use system SDL2/ALSA/codec libraries, without the H700 RA toolchain.
-all: clean libretro-common libsrm.a $(PREFIX_LOCAL)/include/msettings.h
-	mkdir -p build/$(PLATFORM)
-	$(CC) $(SOURCE) -o $(PRODUCT) $(CFLAGS) $(LDFLAGS)
 endif
 	cp -L $(PREFIX)/lib/libsamplerate.so.0 build/$(PLATFORM)
 	cp -L $(PREFIX)/lib/libzip.so.5 build/$(PLATFORM)
@@ -123,8 +76,12 @@ endif
 	cp -L $(PREFIX)/lib/liblz4.so.1 build/$(PLATFORM)
 	cp -L libchdr/build/$(PLATFORM)/libchdr.so.0 build/$(PLATFORM)
 	$(CC) $(SOURCE) -o $(PRODUCT) $(CFLAGS) $(LDFLAGS)
+else ifeq ($(PLATFORM), rg353ps)
+# RG353PS BaseOS: use system SDL2/ALSA/codec libraries, without the H700 RA toolchain.
+all: clean libretro-common libsrm.a $(PREFIX_LOCAL)/include/msettings.h
+	mkdir -p build/$(PLATFORM)
+	$(CC) $(SOURCE) -o $(PRODUCT) $(CFLAGS) $(LDFLAGS)
 endif
-
 libretro-common:
 	git clone https://github.com/libretro/libretro-common
 
