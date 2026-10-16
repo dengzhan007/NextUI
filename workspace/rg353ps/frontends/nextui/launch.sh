@@ -3,6 +3,9 @@ set -u
 
 export PLATFORM=rg353ps
 export DEVICE=rg353ps
+# BaseOS has no X11/Wayland server; use the verified full-screen DRM path.
+export SDL_VIDEODRIVER="${SDL_VIDEODRIVER:-kmsdrm}"
+export SDL_AUDIODRIVER="${SDL_AUDIODRIVER:-alsa}"
 export SDCARD_PATH=/mnt/SDCARD
 SYSTEM_PATH="$SDCARD_PATH/.system/rg353ps"
 export SYSTEM_PATH
