@@ -653,6 +653,25 @@ SDL_Surface* PLAT_initVideo(void) {
 	SDL_SetHint(SDL_HINT_RENDER_DRIVER,"opengl");
 	SDL_SetHint(SDL_HINT_FRAMEBUFFER_ACCELERATION,"1");
 
+	/*
+	 * SDL's OpenGL renderer chooses the EGLConfig while creating its renderer.
+	 * Set the GL profile/version before creating the window/renderer, otherwise
+	 * the later explicit context can request an ES 3.2 config that does not
+	 * match the EGLConfig selected by SDL (EGL_BAD_MATCH on KMSDRM/Panfrost).
+	 * ES 3.0 is sufficient for the GLSL ES 3.00 shaders used by NextUI and is
+	 * more widely available on Mesa/Panfrost than requiring ES 3.2.
+	 */
+	if(strcmp("Desktop", PLAT_getModel()) == 0) {
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	}
+	else {
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+	}
+
 	vid.window   = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w,h, SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN);
 	if (!vid.window) {
 		LOG_error("SDL_CreateWindow failed: %s\n", SDL_GetError());
@@ -671,17 +690,6 @@ SDL_Surface* PLAT_initVideo(void) {
 	LOG_info("Supported texture formats:\n");
 	for (Uint32 i=0; i<info.num_texture_formats; i++) {
 		LOG_info("- %s\n", SDL_GetPixelFormatName(info.texture_formats[i]));
-	}
-
-	if(strcmp("Desktop", PLAT_getModel()) == 0) {
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-	}
-	else {
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 	}
 
 	vid.gl_context = SDL_GL_CreateContext(vid.window);
