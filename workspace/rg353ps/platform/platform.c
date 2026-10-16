@@ -75,22 +75,31 @@ static void close_evdev_input(int i) {
 	input_fds[i] = -1;
 }
 
+static int is_builtin_evdev_name(const char *name) {
+	if (!name || !name[0]) return 0;
+	return strstr(name, "gpio-keys") != NULL
+		|| strstr(name, "adc-joystick") != NULL
+		|| strstr(name, "adc-keys") != NULL
+		|| strstr(name, "rk805 pwrkey") != NULL
+		|| strstr(name, "pwrkey") != NULL
+		|| strstr(name, "volume") != NULL
+		|| strstr(name, "ANBERNIC-keys") != NULL;
+}
+
 static void open_evdev_input(int i) {
 	char path[64];
-	snprintf(path, sizeof(path), "/dev/input/event%i", i);
-
-	input_fds[i] = open(path, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
-	if (input_fds[i] < 0)
-		return;
-
 	char name_path[128];
 	char name[256] = {0};
+	snprintf(path, sizeof(path), "/dev/input/event%i", i);
 	snprintf(name_path, sizeof(name_path), "/sys/class/input/event%i/device/name", i);
 	getFile(name_path, name, sizeof(name));
-	if (name[0])
-		LOG_info("Opening input event%i: %s\n", i, name);
-	else
-		LOG_info("Opening input event%i\n", i);
+	// External controllers are processed through SDL instead. Reading their
+	// evdev nodes here too would double every button press.
+	if (!is_builtin_evdev_name(name)) return;
+
+	input_fds[i] = open(path, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+	if (input_fds[i] < 0) return;
+	LOG_info("Opening built-in input event%i: %s\n", i, name);
 }
 
 static void scan_evdev_inputs(void) {
