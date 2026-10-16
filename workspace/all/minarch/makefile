@@ -51,6 +51,13 @@ endif
 # Rewind support
 LDFLAGS  += -llz4
 
+# RetroAchievements support (the RG353PS bundle builds the same generic
+# rcheevos and libchdr libraries as other supported platforms).
+ifneq (,$(filter $(PLATFORM),tg5040 tg5050 h700 my355 desktop rg353ps))
+CFLAGS += -DRC_CLIENT_SUPPORTS_HASH -DHAS_CHEEVES -DHAS_CHDR
+LDFLAGS += -lrcheevos -lchdr -lcrypto
+endif
+
 # SaveRAM support
 ifeq ($(PLATFORM), desktop)
 all: clean libretro-common rcheevos libchdr $(PREFIX_LOCAL)/include/msettings.h
@@ -74,7 +81,7 @@ endif
 	cp -L $(PREFIX)/lib/liblzma.so.5 build/$(PLATFORM)
 	cp -L $(PREFIX)/lib/libzstd.so.1 build/$(PLATFORM)
 	cp -L $(PREFIX)/lib/liblz4.so.1 build/$(PLATFORM)
-	cp -L libchdr/build/$(PLATFORM)/libchdr.so.0 build/$(PLATFORM)
+	cp -L $(PREFIX_LOCAL)/lib/libchdr.so build/$(PLATFORM)
 	$(CC) $(SOURCE) -o $(PRODUCT) $(CFLAGS) $(LDFLAGS)
 endif
 libretro-common:
