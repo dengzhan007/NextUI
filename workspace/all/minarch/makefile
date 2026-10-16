@@ -76,11 +76,11 @@ ifeq ($(PLATFORM), my355)
 	cp -L $(PREFIX)/lib/libtinyalsa.so.2 build/$(PLATFORM)
 endif
 	cp -L $(PREFIX)/lib/libsamplerate.so.0 build/$(PLATFORM)
-	cp -L $(PREFIX)/lib/libzip.so.5 build/$(PLATFORM)
-	cp -L $(PREFIX)/lib/libbz2.so.1.0 build/$(PLATFORM)
-	cp -L $(PREFIX)/lib/liblzma.so.5 build/$(PLATFORM)
-	cp -L $(PREFIX)/lib/libzstd.so.1 build/$(PLATFORM)
-	cp -L $(PREFIX)/lib/liblz4.so.1 build/$(PLATFORM)
+	cp -L $(PREFIX)/lib/libzip.so.* build/$(PLATFORM)
+	cp -L $(PREFIX)/lib/libbz2.so.* build/$(PLATFORM)
+	cp -L $(PREFIX)/lib/liblzma.so.* build/$(PLATFORM)
+	cp -L $(PREFIX)/lib/libzstd.so.* build/$(PLATFORM)
+	cp -L $(PREFIX)/lib/liblz4.so.* build/$(PLATFORM)
 	@if [ -e libchdr/build/$(PLATFORM)/libchdr.so.0 ]; then \
 	  cp -L libchdr/build/$(PLATFORM)/libchdr.so.0 build/$(PLATFORM)/; \
 	else \
