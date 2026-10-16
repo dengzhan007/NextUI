@@ -8,6 +8,9 @@ ifeq (,$(PLATFORM))
 	$(error please specify PLATFORM, eg. PLATFORM=trimui make)
 endif
 
+# Keep current platform defaults unless a port needs a generic core target.
+CORE_BUILD_PLATFORM ?= $(PLATFORM)
+
 ###############################
 
 # overrides shared by all cores
