@@ -5,7 +5,7 @@ set -u
 export PLATFORM=rg353ps
 export DEVICE=rg353ps
 export IS_NEXT=yes
-export SDCARD_PATH=/mnt/SDCARD
+export SDCARD_PATH="${BASEOS_FRONTEND_ROOT:-/mnt/SDCARD}"
 export ROMS_PATH="$SDCARD_PATH/Roms"
 export BIOS_PATH="$SDCARD_PATH/Bios"
 export SAVES_PATH="$SDCARD_PATH/Saves"
