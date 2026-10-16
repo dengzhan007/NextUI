@@ -6,17 +6,18 @@ export DEVICE=rg353ps
 # BaseOS has no X11/Wayland server; use the verified full-screen DRM path.
 export SDL_VIDEODRIVER="${SDL_VIDEODRIVER:-kmsdrm}"
 export SDL_AUDIODRIVER="${SDL_AUDIODRIVER:-alsa}"
-export SDCARD_PATH=/mnt/SDCARD
+SDCARD_PATH="${BASEOS_FRONTEND_ROOT:-/mnt/SDCARD}"
+export SDCARD_PATH
 SYSTEM_PATH="$SDCARD_PATH/.system/rg353ps"
 export SYSTEM_PATH
 
-if ! grep -q " /mnt/SDCARD " /proc/mounts; then
-    echo "NextUI: BaseOS user-data partition is not mounted" > /dev/kmsg 2>/dev/null || :
+if ! grep -q " $SDCARD_PATH " /proc/mounts; then
+    echo "NextUI: frontend storage $SDCARD_PATH is not mounted" > /dev/kmsg 2>/dev/null || :
     exit 1
 fi
 if [ ! -x "$SYSTEM_PATH/paks/MinUI.pak/launch.sh" ] \
     || [ ! -x "$SYSTEM_PATH/bin/nextui.elf" ]; then
-    echo "NextUI: install bundle missing under $SYSTEM_PATH" > /dev/kmsg 2>/dev/null || :
+    echo "NextUI: install bundle missing under $SYSTEM_PATH (storage $SDCARD_PATH)" > /dev/kmsg 2>/dev/null || :
     exit 1
 fi
 
