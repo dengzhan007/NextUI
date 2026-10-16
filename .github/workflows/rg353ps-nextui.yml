@@ -28,7 +28,6 @@ on:
       - "skeleton/SYSTEM/h700/system.cfg"
       - "skeleton/SYSTEM/res/**"
       - ".github/workflows/rg353ps-nextui.yml"
-  workflow_dispatch:
 
 permissions:
   contents: read
