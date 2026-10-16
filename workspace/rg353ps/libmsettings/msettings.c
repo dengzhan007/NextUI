@@ -237,15 +237,58 @@ void SetRawDisplayCal(int enabled, int red, int green, int blue)
     (void)enabled; (void)red; (void)green; (void)blue;
 }
 
+static int find_rk817_audio_card(void)
+{
+    const char *configured = getenv("BASEOS_AUDIO_CARD");
+    if (configured && configured[0]) {
+        char *end = NULL;
+        long card = strtol(configured, &end, 10);
+        if (end && *end == '\0' && card >= 0 && card <= 31)
+            return (int)card;
+    }
+
+    FILE *fp = fopen("/proc/asound/cards", "r");
+    if (!fp)
+        return -1;
+
+    char line[256];
+    int card = -1;
+    while (fgets(line, sizeof(line), fp)) {
+        if (!strstr(line, "rk817ext") && !strstr(line, "rk817_ext"))
+            continue;
+        char *end = NULL;
+        long parsed = strtol(line, &end, 10);
+        if (end != line && parsed >= 0 && parsed <= 31)
+            card = (int)parsed;
+        break;
+    }
+    fclose(fp);
+    return card;
+}
+
 void SetRawVolume(int value)
 {
     value = clamp(value, 0, 100);
-    char command[256];
+    char command[320];
+    int card = find_rk817_audio_card();
+
+    // RG353PS enumerates HDMI before the RK817 codec. Target the internal
+    // codec explicitly and change playback only, never capture gain.
+    if (card >= 0) {
+        snprintf(command, sizeof(command),
+            "amixer -q -c %d sset Master playback %d%% >/dev/null 2>&1 || "
+            "amixer -q -c %d sset PCM playback %d%% >/dev/null 2>&1 || "
+            "amixer -q -c %d sset 'Playback Volume' %d%% playback >/dev/null 2>&1",
+            card, value, card, value, card, value);
+        if (system(command) == 0)
+            return;
+    }
+
+    // A fallback keeps the settings API useful on an alternative sound card,
+    // but still selects the playback stream rather than a capture element.
     snprintf(command, sizeof(command),
-        "amixer -q sset Master %d%% >/dev/null 2>&1 || "
-        "amixer -q sset PCM %d%% >/dev/null 2>&1 || "
-        "amixer -q sset 'Playback Volume' %d%% >/dev/null 2>&1",
-        value, value, value);
+        "amixer -q sset Master playback %d%% >/dev/null 2>&1",
+        value);
     (void)system(command);
 }
 
