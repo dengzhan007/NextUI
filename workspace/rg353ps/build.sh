@@ -26,9 +26,16 @@ mkdir -p "$PREFIX_LOCAL/include" "$PREFIX_LOCAL/lib"
 
 make -C "$REPO_ROOT/workspace/rg353ps/libmsettings" \
     CROSS_COMPILE=/usr/bin/ PREFIX_LOCAL="$PREFIX_LOCAL" PREFIX=/usr
-make -C "$REPO_ROOT/workspace/rg353ps/cores" \
-    PLATFORM=rg353ps CORE_BUILD_PLATFORM=unix CROSS_COMPILE=/usr/bin/ \
-    PREFIX=/usr PREFIX_LOCAL="$PREFIX_LOCAL" cores
+for core in fceumm snes9x picodrive pcsx_rearmed; do
+    echo "== Building libretro core: $core =="
+    if make -C "$REPO_ROOT/workspace/rg353ps/cores" \
+        PLATFORM=rg353ps CORE_BUILD_PLATFORM=unix CROSS_COMPILE=/usr/bin/ \
+        PREFIX=/usr PREFIX_LOCAL="$PREFIX_LOCAL" "$core"; then
+        echo "Core built: $core"
+    else
+        echo "WARNING: core '$core' did not build; its system pak will be omitted."
+    fi
+done
 make -C "$REPO_ROOT/workspace/all/nextui" \
     PLATFORM=rg353ps CROSS_COMPILE=/usr/bin/ PREFIX=/usr PREFIX_LOCAL="$PREFIX_LOCAL"
 make -C "$REPO_ROOT/workspace/all/minarch" \
@@ -46,14 +53,12 @@ cp "$REPO_ROOT/workspace/all/nextui/build/rg353ps/nextui.elf" \
 cp "$REPO_ROOT/workspace/all/minarch/build/rg353ps/minarch.elf" \
     "$BUNDLE/.system/rg353ps/bin/minarch.elf"
 cp "$PREFIX_LOCAL/lib/libmsettings.so" "$BUNDLE/.system/rg353ps/lib/"
-cp "$REPO_ROOT/workspace/rg353ps/cores/output/fceumm_libretro.so" \
-    "$BUNDLE/.system/rg353ps/cores/"
-cp "$REPO_ROOT/workspace/rg353ps/cores/output/snes9x_libretro.so" \
-    "$BUNDLE/.system/rg353ps/cores/"
-cp "$REPO_ROOT/workspace/rg353ps/cores/output/picodrive_libretro.so" \
-    "$BUNDLE/.system/rg353ps/cores/"
-cp "$REPO_ROOT/workspace/rg353ps/cores/output/pcsx_rearmed_libretro.so" \
-    "$BUNDLE/.system/rg353ps/cores/"
+for core in fceumm snes9x picodrive pcsx_rearmed; do
+    if [ -s "$REPO_ROOT/workspace/rg353ps/cores/output/${core}_libretro.so" ]; then
+        cp "$REPO_ROOT/workspace/rg353ps/cores/output/${core}_libretro.so" \
+            "$BUNDLE/.system/rg353ps/cores/"
+    fi
+done
 
 cp -a "$REPO_ROOT/skeleton/SYSTEM/res/." "$BUNDLE/.system/res/"
 cp -a "$REPO_ROOT/skeleton/SYSTEM/h700/shaders/." "$BUNDLE/.system/rg353ps/shaders/"
@@ -65,9 +70,13 @@ cp "$REPO_ROOT/skeleton/SYSTEM/rg353ps/bin/governor.sh" \
 cp "$REPO_ROOT/skeleton/SYSTEM/rg353ps/bin/run_hooks.sh" \
     "$BUNDLE/.system/rg353ps/bin/run_hooks.sh"
 
-for pak in FC SFC MD PS; do
-    cp -a "$REPO_ROOT/skeleton/SYSTEM/h700/paks/Emus/$pak.pak" \
-        "$BUNDLE/.system/rg353ps/paks/Emus/$pak.pak"
+for item in "FC:fceumm" "SFC:snes9x" "MD:picodrive" "PS:pcsx_rearmed"; do
+    pak=${item%%:*}
+    core=${item#*:}
+    if [ -s "$BUNDLE/.system/rg353ps/cores/${core}_libretro.so" ]; then
+        cp -a "$REPO_ROOT/skeleton/SYSTEM/h700/paks/Emus/$pak.pak" \
+            "$BUNDLE/.system/rg353ps/paks/Emus/$pak.pak"
+    fi
 done
 cp "$REPO_ROOT/workspace/rg353ps/frontends/nextui/launch.sh" \
     "$BUNDLE/.baseos/frontends/nextui/launch.sh"
@@ -80,8 +89,8 @@ Extract this archive to the user-data partition mounted by BaseOS at /mnt/SDCARD
 The archive installs .baseos/frontends/nextui/launch.sh and the .system/res and
 .system/rg353ps trees. BaseOS discovers the frontend on the next boot.
 
-This profile includes FC/NES, SFC/SNES, MD/Genesis and PS/PlayStation paks and
-matching FCEUmm, Snes9x, PicoDrive and PCSX-ReARMed cores. GB/GBC/GBA paks and
+The builder includes FC/NES, SFC/SNES, MD/Genesis and PS/PlayStation
+systems only when each matching core successfully builds. GB/GBC/GBA paks and
 cores are intentionally excluded from this RG353PS profile.
 
 BaseOS system boot files remain in the separate baseos-my355 repository.
