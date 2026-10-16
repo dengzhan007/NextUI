@@ -40,18 +40,26 @@ make -C "$REPO_ROOT/workspace/all/nextui" \
     PLATFORM=rg353ps CROSS_COMPILE=/usr/bin/ PREFIX=/usr PREFIX_LOCAL="$PREFIX_LOCAL"
 make -C "$REPO_ROOT/workspace/all/minarch" \
     PLATFORM=rg353ps CROSS_COMPILE=/usr/bin/ PREFIX=/usr PREFIX_LOCAL="$PREFIX_LOCAL"
+make -C "$REPO_ROOT/workspace/all/bootlogo" \
+    PLATFORM=rg353ps CROSS_COMPILE=/usr/bin/ PREFIX=/usr PREFIX_LOCAL="$PREFIX_LOCAL"
 
 rm -rf "$BUNDLE"
 mkdir -p "$BUNDLE/.system/res" \
     "$BUNDLE/.system/rg353ps/bin" "$BUNDLE/.system/rg353ps/lib" \
     "$BUNDLE/.system/rg353ps/cores" "$BUNDLE/.system/rg353ps/shaders" \
     "$BUNDLE/.system/rg353ps/paks/MinUI.pak" "$BUNDLE/.system/rg353ps/paks/Emus" \
-    "$BUNDLE/.baseos/frontends/nextui"
+    "$BUNDLE/.baseos/frontends/nextui" "$BUNDLE/Tools/rg353ps/Bootlogo.pak/640x480"
 
 cp "$REPO_ROOT/workspace/all/nextui/build/rg353ps/nextui.elf" \
     "$BUNDLE/.system/rg353ps/bin/nextui.elf"
 cp "$REPO_ROOT/workspace/all/minarch/build/rg353ps/minarch.elf" \
     "$BUNDLE/.system/rg353ps/bin/minarch.elf"
+cp "$REPO_ROOT/workspace/all/bootlogo/build/rg353ps/bootlogo.elf" \
+    "$BUNDLE/Tools/rg353ps/Bootlogo.pak/bootlogo.elf"
+cp "$REPO_ROOT/skeleton/EXTRAS/Tools/h700/Bootlogo.pak/launch.sh" \
+    "$BUNDLE/Tools/rg353ps/Bootlogo.pak/launch.sh"
+cp -a "$REPO_ROOT/skeleton/EXTRAS/Tools/h700/Bootlogo.pak/640x480/." \
+    "$BUNDLE/Tools/rg353ps/Bootlogo.pak/640x480/"
 cp "$PREFIX_LOCAL/lib/libmsettings.so" "$BUNDLE/.system/rg353ps/lib/"
 for core in fceumm snes9x picodrive pcsx_rearmed; do
     if [ -s "$REPO_ROOT/workspace/rg353ps/cores/output/${core}_libretro.so" ]; then
@@ -89,9 +97,9 @@ Extract this archive to the user-data partition mounted by BaseOS at /mnt/SDCARD
 The archive installs .baseos/frontends/nextui/launch.sh and the .system/res and
 .system/rg353ps trees. BaseOS discovers the frontend on the next boot.
 
-The builder includes FC/NES, SFC/SNES, MD/Genesis and PS/PlayStation
-systems only when each matching core successfully builds. GB/GBC/GBA paks and
-cores are intentionally excluded from this RG353PS profile.
+The bundle includes a Bootlogo.pak picker for the customizable /mnt/boot/bootlogo.bmp.
+FC/NES, SFC/SNES, MD/Genesis and PS/PlayStation systems are included only when
+their matching core builds. GB/GBC/GBA paks and cores are intentionally omitted.
 
 BaseOS system boot files remain in the separate baseos-my355 repository.
 EOF
@@ -99,7 +107,9 @@ EOF
 chmod 0755 "$BUNDLE/.baseos/frontends/nextui/launch.sh" \
     "$BUNDLE/.system/rg353ps/paks/MinUI.pak/launch.sh" \
     "$BUNDLE/.system/rg353ps/bin/governor.sh" \
-    "$BUNDLE/.system/rg353ps/bin/run_hooks.sh"
+    "$BUNDLE/.system/rg353ps/bin/run_hooks.sh" \
+    "$BUNDLE/Tools/rg353ps/Bootlogo.pak/launch.sh" \
+    "$BUNDLE/Tools/rg353ps/Bootlogo.pak/bootlogo.elf"
 rm -f "$BUILD_OUT/baseos-rg353ps-nextui.zip" "$BUILD_OUT/baseos-rg353ps-nextui.zip.sha256"
 (cd "$BUNDLE" && zip -qr "$BUILD_OUT/baseos-rg353ps-nextui.zip" .)
 cd "$BUILD_OUT"
