@@ -28,7 +28,7 @@ SOURCE = $(TARGET).c ma_cheats.c ma_rewind.c ma_audio.c ma_input.c \
          ../common/notification.c ../../$(PLATFORM)/platform/platform.c
 
 # RA support
-ifneq (,$(filter $(PLATFORM),tg5040 tg5050 h700 my355 desktop))
+ifneq (,$(filter $(PLATFORM),tg5040 tg5050 h700 my355 desktop rg353ps))
 # RA source files
 SOURCE += ../common/http.c ../common/ra_badges.c ../common/ra_offline.c ../common/ra_sync.c ../common/ra_event_queue.c ra_integration.c chd_reader.c
 endif
@@ -56,7 +56,7 @@ ifeq ($(PLATFORM), desktop)
 all: clean libretro-common rcheevos libchdr $(PREFIX_LOCAL)/include/msettings.h
 	mkdir -p build/$(PLATFORM)
 	$(CC) $(SOURCE) -o $(PRODUCT) $(CFLAGS) $(LDFLAGS)
-else ifneq (,$(filter $(PLATFORM),tg5040 tg5050 h700 my355))
+else ifneq (,$(filter $(PLATFORM),tg5040 tg5050 h700 my355 rg353ps))
 # Platforms with RA support
 all: clean libretro-common libsrm.a rcheevos libchdr $(PREFIX_LOCAL)/include/msettings.h
 	mkdir -p build/$(PLATFORM)
@@ -75,11 +75,6 @@ endif
 	cp -L $(PREFIX)/lib/libzstd.so.1 build/$(PLATFORM)
 	cp -L $(PREFIX)/lib/liblz4.so.1 build/$(PLATFORM)
 	cp -L libchdr/build/$(PLATFORM)/libchdr.so.0 build/$(PLATFORM)
-	$(CC) $(SOURCE) -o $(PRODUCT) $(CFLAGS) $(LDFLAGS)
-else ifeq ($(PLATFORM), rg353ps)
-# RG353PS BaseOS: use system SDL2/ALSA/codec libraries, without the H700 RA toolchain.
-all: clean libretro-common libsrm.a $(PREFIX_LOCAL)/include/msettings.h
-	mkdir -p build/$(PLATFORM)
 	$(CC) $(SOURCE) -o $(PRODUCT) $(CFLAGS) $(LDFLAGS)
 endif
 libretro-common:
