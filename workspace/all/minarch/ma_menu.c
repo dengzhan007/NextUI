@@ -947,7 +947,7 @@ static int OptionAchievements_openMenu(MenuList* list, int i) {
 static MenuList options_menu = {
 	.type = MENU_LIST,
 	.items = (MenuItem[]) {
-		{"Frontend", "NextUI (" BUILD_DATE " " BUILD_HASH ")",.on_confirm=OptionFrontend_openMenu},
+		{"Frontend", "NextUI (RG353PS)",.on_confirm=OptionFrontend_openMenu},
 		{"Emulator",.on_confirm=OptionEmulator_openMenu},
 		{"Shaders",.on_confirm=OptionShaders_openMenu},
 		{"Cheats",.on_confirm=OptionCheats_openMenu},
