@@ -6,6 +6,7 @@ on:
     paths:
       - "workspace/rg353ps/**"
       - "workspace/all/minarch/makefile"
+      - "workspace/all/minarch/**"
       - "workspace/all/cores/makefile"
       - "workspace/all/nextui/**"
       - "skeleton/SYSTEM/rg353ps/**"
@@ -18,6 +19,7 @@ on:
     paths:
       - "workspace/rg353ps/**"
       - "workspace/all/minarch/makefile"
+      - "workspace/all/minarch/**"
       - "workspace/all/cores/makefile"
       - "workspace/all/nextui/**"
       - "skeleton/SYSTEM/rg353ps/**"
