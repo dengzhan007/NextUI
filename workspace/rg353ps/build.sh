@@ -14,7 +14,7 @@ if [ "$#" -eq 0 ] || [ "$1" != "--inside" ]; then
         sh /src/workspace/rg353ps/build.sh --inside
 fi
 
-apk add --no-cache build-base make git pkgconf zip \
+apk add --no-cache build-base make git pkgconf zip cmake openssl-dev \
     sdl2-dev sdl2_image-dev sdl2_ttf-dev mesa-dev freetype-dev \
     libsamplerate-dev libzip-dev lz4-dev alsa-lib-dev zlib-dev bzip2-dev xz-dev zstd-dev
 
@@ -61,6 +61,9 @@ cp "$REPO_ROOT/skeleton/EXTRAS/Tools/h700/Bootlogo.pak/launch.sh" \
 cp -a "$REPO_ROOT/skeleton/EXTRAS/Tools/h700/Bootlogo.pak/640x480/." \
     "$BUNDLE/Tools/rg353ps/Bootlogo.pak/640x480/"
 cp "$PREFIX_LOCAL/lib/libmsettings.so" "$BUNDLE/.system/rg353ps/lib/"
+# minarch's generic RA build stages the codec/network dependencies alongside
+# its executable; ship those exact sonames so the handheld need not supply them.
+cp -a "$REPO_ROOT/workspace/all/minarch/build/rg353ps/"*.so* "$BUNDLE/.system/rg353ps/lib/"
 for core in fceumm snes9x picodrive pcsx_rearmed; do
     if [ -s "$REPO_ROOT/workspace/rg353ps/cores/output/${core}_libretro.so" ]; then
         cp "$REPO_ROOT/workspace/rg353ps/cores/output/${core}_libretro.so" \
