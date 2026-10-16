@@ -63,7 +63,7 @@ static SDL_Surface* rotatePreviewCW(SDL_Surface* src)
 int loadImages()
 {
     char* device = getenv("DEVICE");
-    if (exactMatch("h700", PLATFORM)) {
+    if (exactMatch("h700", PLATFORM) || exactMatch("rg353ps", PLATFORM)) {
         // H700 presets are shared between devices with the same panel resolution.
         char* folder = "640x480";
         if (exactMatch("rg28xx", device)) folder = "480x640";
@@ -183,7 +183,13 @@ int main(int argc, char *argv[])
                 char* boot_path = "/mnt/boot/";
                 char* logo_path = image_paths[selected];
                 char cmd[1024];
-                if (exactMatch("h700", PLATFORM)) {
+                if (exactMatch("rg353ps", PLATFORM)) {
+                    // BaseOS already mounts the BOOT partition at /mnt/boot.
+                    snprintf(cmd, sizeof(cmd),
+                        "cp \"%s\" /mnt/boot/bootlogo.bmp && sync && reboot",
+                        logo_path);
+                }
+                else if (exactMatch("h700", PLATFORM)) {
                     // H700 uses partition 2; preserve the stock logo as a restorable preset.
                     snprintf(cmd, sizeof(cmd),
                         "mkdir -p %s && mount -t vfat /dev/mmcblk0p2 %s && "
