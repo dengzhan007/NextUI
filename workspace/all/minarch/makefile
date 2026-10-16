@@ -109,6 +109,11 @@ ifeq ($(PLATFORM), my355)
 	cp -L $(PREFIX)/lib/libsqlite3.so build/$(PLATFORM)
 	cp -L $(PREFIX)/lib/libffi.so.7 build/$(PLATFORM)
 	cp -L $(PREFIX)/lib/libtinyalsa.so.2 build/$(PLATFORM)
+else ifeq ($(PLATFORM), rg353ps)
+# RG353PS BaseOS: use system SDL2/ALSA/codec libraries, without the H700 RA toolchain.
+all: clean libretro-common libsrm.a $(PREFIX_LOCAL)/include/msettings.h
+	mkdir -p build/$(PLATFORM)
+	$(CC) $(SOURCE) -o $(PRODUCT) $(CFLAGS) $(LDFLAGS)
 endif
 	cp -L $(PREFIX)/lib/libsamplerate.so.0 build/$(PLATFORM)
 	cp -L $(PREFIX)/lib/libzip.so.5 build/$(PLATFORM)
