@@ -1,0 +1,65 @@
+name: RG353PS BaseOS NextUI
+
+on:
+  push:
+    branches: [rg353ps-port]
+    paths:
+      - "workspace/rg353ps/**"
+      - "workspace/all/minarch/makefile"
+      - "workspace/all/cores/makefile"
+      - "workspace/all/nextui/**"
+      - "skeleton/SYSTEM/rg353ps/**"
+      - "skeleton/SYSTEM/h700/paks/Emus/**"
+      - "skeleton/SYSTEM/h700/shaders/**"
+      - "skeleton/SYSTEM/h700/system.cfg"
+      - "skeleton/SYSTEM/res/**"
+      - ".github/workflows/rg353ps-nextui.yml"
+  pull_request:
+    paths:
+      - "workspace/rg353ps/**"
+      - "workspace/all/minarch/makefile"
+      - "workspace/all/cores/makefile"
+      - "workspace/all/nextui/**"
+      - "skeleton/SYSTEM/rg353ps/**"
+      - "skeleton/SYSTEM/h700/paks/Emus/**"
+      - "skeleton/SYSTEM/h700/shaders/**"
+      - "skeleton/SYSTEM/h700/system.cfg"
+      - "skeleton/SYSTEM/res/**"
+      - ".github/workflows/rg353ps-nextui.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rg353ps-nextui-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build BaseOS bundle on ARM64 Alpine
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check shell syntax
+        run: |
+          sh -n workspace/rg353ps/build.sh
+          sh -n workspace/rg353ps/frontends/nextui/launch.sh
+          sh -n skeleton/SYSTEM/rg353ps/paks/MinUI.pak/launch.sh
+          sh -n skeleton/SYSTEM/rg353ps/bin/governor.sh
+          sh -n skeleton/SYSTEM/rg353ps/bin/run_hooks.sh
+
+      - name: Build NextUI, minarch and available cores
+        run: sh workspace/rg353ps/build.sh
+
+      - name: Publish test bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseos-rg353ps-nextui
+          if-no-files-found: error
+          path: |
+            workspace/rg353ps/build/baseos-rg353ps-nextui.zip
+            workspace/rg353ps/build/baseos-rg353ps-nextui.zip.sha256
