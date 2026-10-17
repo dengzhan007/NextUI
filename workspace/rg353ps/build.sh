@@ -80,7 +80,7 @@ for pattern in \
     'libpng16.so*' 'libjpeg.so*' 'libwebp*.so*' 'libtiff.so*' \
     'libfreetype.so*' 'libharfbuzz.so*' 'libbrotlidec.so*' \
     'libbrotlicommon.so*' 'libsharpyuv.so*' 'libjbig.so*' \
-    'libdeflate.so*'; do
+    'libdeflate.so*' 'libavif.so*' 'libbz2.so*' 'libintl.so*'; do
     for library in /usr/lib/$pattern; do
         [ -e "$library" ] || continue
         cp -a "$library" "$BUNDLE/.system/rg353ps/lib/"
