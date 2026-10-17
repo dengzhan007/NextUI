@@ -86,6 +86,11 @@ int main(int argc , char* argv[]) {
 	SDL_Event event;
 	int quit = 0;
 	int dirty = 1;
+	FILE *input_log = fopen("/mnt/SDCARD/rg353ps-input-test.log", "a");
+	if (input_log) {
+		fprintf(input_log, "\n===== RG353PS input test start =====\n");
+		fflush(input_log);
+	}
 	// int show_setting = 0;
 	PAD_Axis last_laxis = {0,0};
 	PAD_Axis last_raxis = {0,0};
@@ -95,11 +100,22 @@ int main(int argc , char* argv[]) {
 
 		PAD_poll();
 
-		if (PAD_anyPressed() || PAD_anyJustReleased()) dirty = 1;
-		if (pad.laxis.x!=last_laxis.x || pad.laxis.y!=last_laxis.y || pad.raxis.x!=last_raxis.x || pad.raxis.y!=last_raxis.y) {
+		int button_changed = PAD_anyPressed() || PAD_anyJustReleased();
+		int axis_changed = (pad.laxis.x!=last_laxis.x || pad.laxis.y!=last_laxis.y || pad.raxis.x!=last_raxis.x || pad.raxis.y!=last_raxis.y);
+		if (button_changed) dirty = 1;
+		if (axis_changed) {
 			dirty = 1;
 			last_laxis = pad.laxis;
 			last_raxis = pad.raxis;
+		}
+		if (input_log && (button_changed || axis_changed)) {
+			fprintf(input_log, "t=%u buttons:", SDL_GetTicks());
+			fprintf(input_log, " U=%d D=%d L=%d R=%d", PAD_isPressed(BTN_DPAD_UP), PAD_isPressed(BTN_DPAD_DOWN), PAD_isPressed(BTN_DPAD_LEFT), PAD_isPressed(BTN_DPAD_RIGHT));
+			fprintf(input_log, " A=%d B=%d X=%d Y=%d", PAD_isPressed(BTN_A), PAD_isPressed(BTN_B), PAD_isPressed(BTN_X), PAD_isPressed(BTN_Y));
+			fprintf(input_log, " L1=%d R1=%d L2=%d R2=%d L3=%d R3=%d", PAD_isPressed(BTN_L1), PAD_isPressed(BTN_R1), PAD_isPressed(BTN_L2), PAD_isPressed(BTN_R2), PAD_isPressed(BTN_L3), PAD_isPressed(BTN_R3));
+			fprintf(input_log, " START=%d SELECT=%d MENU=%d POWER=%d VOL-=%d VOL+=%d", PAD_isPressed(BTN_START), PAD_isPressed(BTN_SELECT), PAD_isPressed(BTN_MENU), PAD_isPressed(BTN_POWER), PAD_isPressed(BTN_MINUS), PAD_isPressed(BTN_PLUS));
+			fprintf(input_log, " LAXIS=(%d,%d) RAXIS=(%d,%d)\n", pad.laxis.x, pad.laxis.y, pad.raxis.x, pad.raxis.y);
+			fflush(input_log);
 		}
 		if (PAD_isPressed(BTN_SELECT) && PAD_isPressed(BTN_START)) quit = 1;
 		
@@ -313,6 +329,10 @@ int main(int argc , char* argv[]) {
 		else GFX_sync();
 	}
 	
+	if (input_log) {
+		fprintf(input_log, "===== RG353PS input test end =====\n");
+		fclose(input_log);
+	}
 	QuitSettings();
 	PWR_quit();
 	PAD_quit();
