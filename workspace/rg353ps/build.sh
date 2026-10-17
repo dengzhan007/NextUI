@@ -42,13 +42,16 @@ make -C "$REPO_ROOT/workspace/all/minarch" \
     PLATFORM=rg353ps CROSS_COMPILE=/usr/bin/ PREFIX=/usr PREFIX_LOCAL="$PREFIX_LOCAL"
 make -C "$REPO_ROOT/workspace/all/bootlogo" \
     PLATFORM=rg353ps CROSS_COMPILE=/usr/bin/ PREFIX=/usr PREFIX_LOCAL="$PREFIX_LOCAL"
+make -C "$REPO_ROOT/workspace/all/minput" \
+    PLATFORM=rg353ps CROSS_COMPILE=/usr/bin/ PREFIX=/usr PREFIX_LOCAL="$PREFIX_LOCAL"
 
 rm -rf "$BUNDLE"
 mkdir -p "$BUNDLE/.system/res" \
     "$BUNDLE/.system/rg353ps/bin" "$BUNDLE/.system/rg353ps/lib" \
     "$BUNDLE/.system/rg353ps/cores" "$BUNDLE/.system/rg353ps/shaders" \
     "$BUNDLE/.system/rg353ps/paks/MinUI.pak" "$BUNDLE/.system/rg353ps/paks/Emus" \
-    "$BUNDLE/.baseos/frontends/nextui" "$BUNDLE/Tools/rg353ps/Bootlogo.pak/640x480"
+    "$BUNDLE/.baseos/frontends/nextui" "$BUNDLE/Tools/rg353ps/Bootlogo.pak/640x480" \
+    "$BUNDLE/Tools/rg353ps/Input.pak"
 
 cp "$REPO_ROOT/workspace/all/nextui/build/rg353ps/nextui.elf" \
     "$BUNDLE/.system/rg353ps/bin/nextui.elf"
@@ -60,6 +63,9 @@ cp "$REPO_ROOT/skeleton/EXTRAS/Tools/h700/Bootlogo.pak/launch.sh" \
     "$BUNDLE/Tools/rg353ps/Bootlogo.pak/launch.sh"
 cp -a "$REPO_ROOT/skeleton/EXTRAS/Tools/h700/Bootlogo.pak/640x480/." \
     "$BUNDLE/Tools/rg353ps/Bootlogo.pak/640x480/"
+cp "$REPO_ROOT/workspace/all/minput/build/rg353ps/minput.elf" \
+    "$BUNDLE/Tools/rg353ps/Input.pak/minput.elf"
+printf '%s\n' '#!/bin/sh' 'cd "$(dirname "$0")"' './minput.elf' > "$BUNDLE/Tools/rg353ps/Input.pak/launch.sh"
 cp "$PREFIX_LOCAL/lib/libmsettings.so" "$BUNDLE/.system/rg353ps/lib/"
 # minarch's generic RA build stages the codec/network dependencies alongside
 # its executable; ship those exact sonames so the handheld need not supply them.
@@ -101,6 +107,8 @@ The archive installs .baseos/frontends/nextui/launch.sh and the .system/res and
 .system/rg353ps trees. BaseOS discovers the frontend on the next boot.
 
 The bundle includes a Bootlogo.pak picker for the customizable /mnt/boot/bootlogo.bmp.
+It also includes Tools/rg353ps/Input.pak for on-screen controller testing. Button/axis
+changes are appended to /mnt/SDCARD/rg353ps-input-test.log; quit with START+SELECT.
 FC/NES, SFC/SNES, MD/Genesis and PS/PlayStation systems are included only when
 their matching core builds. GB/GBC/GBA paks and cores are intentionally omitted.
 
@@ -112,7 +120,9 @@ chmod 0755 "$BUNDLE/.baseos/frontends/nextui/launch.sh" \
     "$BUNDLE/.system/rg353ps/bin/governor.sh" \
     "$BUNDLE/.system/rg353ps/bin/run_hooks.sh" \
     "$BUNDLE/Tools/rg353ps/Bootlogo.pak/launch.sh" \
-    "$BUNDLE/Tools/rg353ps/Bootlogo.pak/bootlogo.elf"
+    "$BUNDLE/Tools/rg353ps/Bootlogo.pak/bootlogo.elf" \
+    "$BUNDLE/Tools/rg353ps/Input.pak/launch.sh" \
+    "$BUNDLE/Tools/rg353ps/Input.pak/minput.elf"
 rm -f "$BUILD_OUT/baseos-rg353ps-nextui.zip" "$BUILD_OUT/baseos-rg353ps-nextui.zip.sha256"
 (cd "$BUNDLE" && zip -qr "$BUILD_OUT/baseos-rg353ps-nextui.zip" .)
 cd "$BUILD_OUT"
