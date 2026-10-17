@@ -70,6 +70,22 @@ cp "$PREFIX_LOCAL/lib/libmsettings.so" "$BUNDLE/.system/rg353ps/lib/"
 # minarch's generic RA build stages the codec/network dependencies alongside
 # its executable; ship those exact sonames so the handheld need not supply them.
 cp -a "$REPO_ROOT/workspace/all/minarch/build/rg353ps/"*.so* "$BUNDLE/.system/rg353ps/lib/"
+# nextui.elf uses SDL2_image and SDL2_ttf directly. These libraries are
+# installed in the Alpine build container, but unlike minarch's staged
+# dependencies they were not copied into the portable RG353PS bundle.
+# Include their runtime dependencies too, while leaving core system libraries
+# (musl, the dynamic loader, and the base SDL2 runtime) to BaseOS.
+for pattern in \
+    'libSDL2_image-2.0.so*' 'libSDL2_ttf-2.0.so*' \
+    'libpng16.so*' 'libjpeg.so*' 'libwebp*.so*' 'libtiff.so*' \
+    'libfreetype.so*' 'libharfbuzz.so*' 'libbrotlidec.so*' \
+    'libbrotlicommon.so*' 'libsharpyuv.so*' 'libjbig.so*' \
+    'libdeflate.so*'; do
+    for library in /usr/lib/$pattern; do
+        [ -e "$library" ] || continue
+        cp -a "$library" "$BUNDLE/.system/rg353ps/lib/"
+    done
+done
 for core in fceumm snes9x picodrive pcsx_rearmed; do
     if [ -s "$REPO_ROOT/workspace/rg353ps/cores/output/${core}_libretro.so" ]; then
         cp "$REPO_ROOT/workspace/rg353ps/cores/output/${core}_libretro.so" \
