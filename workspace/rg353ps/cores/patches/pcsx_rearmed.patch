@@ -1,0 +1,15 @@
+diff --git a/Makefile.libretro b/Makefile.libretro
+--- a/Makefile.libretro
++++ b/Makefile.libretro
+@@ -29,7 +29,11 @@
+ CC ?= gcc
+ CXX ?= g++
+ AS ?= as
+ LD ?= ld
+ CFLAGS ?=
+ 
++# This Makefile builds the libretro core, not the standalone PCSX frontend.
++# Do not compile the standalone gz* save-state helpers with USE_MINIZ enabled.
++CFLAGS += -DHAVE_LIBRETRO
++
+ # early compiler overrides
