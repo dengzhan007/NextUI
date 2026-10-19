@@ -33,9 +33,17 @@ for core in fceumm snes9x picodrive pcsx_rearmed; do
         PREFIX=/usr PREFIX_LOCAL="$PREFIX_LOCAL" "$core"; then
         echo "Core built: $core"
     else
+        if [ "$core" = "pcsx_rearmed" ]; then
+            echo "ERROR: required PlayStation core '$core' failed to build; refusing to publish a bundle without PS support." >&2
+            exit 1
+        fi
         echo "WARNING: core '$core' did not build; its system pak will be omitted."
     fi
 done
+[ -s "$REPO_ROOT/workspace/rg353ps/cores/output/pcsx_rearmed_libretro.so" ] || {
+    echo "ERROR: PlayStation core output is missing after core build." >&2
+    exit 1
+}
 make -C "$REPO_ROOT/workspace/all/nextui" \
     PLATFORM=rg353ps CROSS_COMPILE=/usr/bin/ PREFIX=/usr PREFIX_LOCAL="$PREFIX_LOCAL"
 make -C "$REPO_ROOT/workspace/all/minarch" \
@@ -111,6 +119,16 @@ for item in "FC:fceumm" "SFC:snes9x" "MD:picodrive" "PS:pcsx_rearmed"; do
             "$BUNDLE/.system/rg353ps/paks/Emus/$pak.pak"
     fi
 done
+# Do not publish a bundle that silently drops the PS system menu because the
+# core or the inherited PAK launcher was missing.
+[ -s "$BUNDLE/.system/rg353ps/cores/pcsx_rearmed_libretro.so" ] || {
+    echo "ERROR: bundle is missing pcsx_rearmed_libretro.so" >&2
+    exit 1
+}
+[ -f "$BUNDLE/.system/rg353ps/paks/Emus/PS.pak/launch.sh" ] || {
+    echo "ERROR: bundle is missing the PS emulator PAK launcher" >&2
+    exit 1
+}
 cp "$REPO_ROOT/workspace/rg353ps/frontends/nextui/launch.sh" \
     "$BUNDLE/.baseos/frontends/nextui/launch.sh"
 
