@@ -85,7 +85,7 @@ static int find_wake_event_index(void) {
 			continue;
 		}
 		fclose(fp);
-		name[strcspn(name, "\\r\\n")] = '\\0';
+		name[strcspn(name, "\r\n")] = '\0';
 		if (strcmp(name, "rk805 pwrkey") == 0)
 			return i;
 	}
@@ -101,7 +101,7 @@ static int ensure_wake_fd(void) {
 	snprintf(path, sizeof(path), "/dev/input/event%i", event_index);
 	wake_fd = open(path, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 	if (wake_fd >= 0)
-		LOG_info("Power-key wake monitor using %s\\n", path);
+		LOG_info("Power-key wake monitor using %s\n", path);
 	return wake_fd >= 0;
 }
 
@@ -837,10 +837,10 @@ static void set_power_indicator(int enable) {
 			continue;
 
 		// Remove an always-on trigger so the brightness request sticks.
-		write_sysfs_text(trigger_path, "none\\n");
+		write_sysfs_text(trigger_path, "none\n");
 		int brightness = enable ? read_sysfs_int(max_path, 1) : 0;
 		char value[32];
-		snprintf(value, sizeof(value), "%d\\n", brightness);
+		snprintf(value, sizeof(value), "%d\n", brightness);
 		write_sysfs_text(brightness_path, value);
 		closedir(dir);
 		return;
