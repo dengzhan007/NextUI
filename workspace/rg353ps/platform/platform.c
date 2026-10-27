@@ -1181,7 +1181,11 @@ void PLAT_setNetworkTimeSync(bool on) {
 
 /////////////////////////
 
-// The RG353PS startup route is fixed for this BaseOS target. Keep the\n// generic Bluetooth code but omit its inotify-based .asoundrc watcher.\n#define RG353PS_DISABLE_AUDIO_DEVICE_WATCHER 1\n#include "generic_bt.c"\n#undef RG353PS_DISABLE_AUDIO_DEVICE_WATCHER
+// The RG353PS startup route is fixed for this BaseOS target. Keep the
+// generic Bluetooth code but omit its inotify-based .asoundrc watcher.
+#define RG353PS_DISABLE_AUDIO_DEVICE_WATCHER 1
+#include "generic_bt.c"
+#undef RG353PS_DISABLE_AUDIO_DEVICE_WATCHER
 
 /////////////////////////
 
