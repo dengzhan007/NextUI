@@ -971,19 +971,6 @@ void PLAT_setRumble(int strength) {
 	if (access(RUMBLE_PATH, W_OK) == 0) putInt(RUMBLE_PATH, (strength) ? 1 : 0);
 }
 
-/*
- * BaseOS creates the RK817 ALSA default route before the emulator starts.
- * Watching the userdata directory and .asoundrc at runtime is unnecessary on
- * this device and has caused emulator crashes in the minimal userspace.
- */
-void PLAT_audioDeviceWatchRegister(void (*cb)(int, int)) {
-	(void)cb;
-	LOG_info("RG353PS: dynamic ALSA device watcher disabled; using the startup route\\n");
-}
-
-void PLAT_audioDeviceWatchUnregister(void) {
-}
-
 int PLAT_pickSampleRate(int requested, int max) {
 	// bluetooth: allow limiting the maximum to improve compatibility
 	// NOTE: called from SND_init before InitSettings, so msettings shared
