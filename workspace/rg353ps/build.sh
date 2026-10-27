@@ -40,6 +40,34 @@ for core in fceumm snes9x picodrive pcsx_rearmed; do
         echo "WARNING: core '$core' did not build; its system pak will be omitted."
     fi
 done
+
+# A successful compiler exit is not enough: the wrong upstream PLATFORM
+# setting can produce a shared object named *_libretro.so with no Libretro API.
+# Validate the exported entrypoints before copying anything into the bundle.
+verify_libretro_core() {
+    core_name=$1
+    core_file="$REPO_ROOT/workspace/rg353ps/cores/output/${core_name}_libretro.so"
+    [ -s "$core_file" ] || {
+        echo "ERROR: required core output missing: $core_file" >&2
+        exit 1
+    }
+    for symbol in retro_init retro_get_system_info retro_load_game; do
+        if ! nm -D --defined-only "$core_file" 2>/dev/null | awk -v wanted="$symbol" '$NF == wanted { found=1 } END { exit !found }'; then
+            echo "ERROR: $core_file does not export required Libretro symbol '$symbol'." >&2
+            echo "The core was probably built with the wrong uppercase PLATFORM setting." >&2
+            exit 1
+        fi
+    done
+}
+for core in fceumm snes9x picodrive pcsx_rearmed; do
+    verify_libretro_core "$core"
+done
+if nm -D -u "$REPO_ROOT/workspace/rg353ps/cores/output/picodrive_libretro.so" 2>/dev/null |
+    awk '$NF ~ /^emu_32x_startup(@.*)?$/ { found=1 } END { exit !found }'; then
+    echo "ERROR: Picodrive core has unresolved symbol emu_32x_startup." >&2
+    exit 1
+fi
+
 [ -s "$REPO_ROOT/workspace/rg353ps/cores/output/pcsx_rearmed_libretro.so" ] || {
     echo "ERROR: PlayStation core output is missing after core build." >&2
     exit 1
