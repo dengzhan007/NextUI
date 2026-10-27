@@ -808,7 +808,7 @@ static void set_power_indicator(int enable) {
 	/*
 	 * Keep compatibility with the H700-specific power LED control if this
 	 * platform code is reused there. The RG353PS instead exposes the power
-	 * indicator through /sys/class/leds/*power*/brightness.
+	 * indicator through a Linux LED-class device whose name contains 'power'.
 	 */
 	const char *h700_work_led = "/sys/class/power_supply/axp2202-battery/work_led";
 	if (exists(h700_work_led)) {
