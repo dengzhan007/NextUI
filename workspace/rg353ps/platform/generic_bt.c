@@ -579,6 +579,7 @@ void PLAT_bluetoothSetVolume(int vol) {
 	btlog("Set BT volume: %d\n", vol);
 }
 
+#ifndef RG353PS_DISABLE_AUDIO_DEVICE_WATCHER
 // bt_device_watcher.c
 
 #include <sys/inotify.h>
@@ -773,3 +774,5 @@ void PLAT_audioDeviceWatchUnregister(void) {
     file_watch_fd = -1;
     callback_fn = NULL;
 }
+
+#endif /* RG353PS_DISABLE_AUDIO_DEVICE_WATCHER */
