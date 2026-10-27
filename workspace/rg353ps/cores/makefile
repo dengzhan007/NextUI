@@ -18,4 +18,11 @@ pcsx_rearmed_REPO = https://github.com/libretro/pcsx_rearmed
 pcsx_rearmed_MAKEFILE = Makefile.libretro
 pcsx_rearmed_SUBMODULES = frontend/libpicofe
 
+# The outer build uses PLATFORM=rg353ps for selecting this directory, but
+# these upstream Makefile.libretro files use uppercase PLATFORM=libretro to
+# select the Libretro entrypoint. The lowercase platform=unix remains the
+# toolchain/build-flavour selector.
+picodrive_FLAGS = PLATFORM=libretro SHARED="-shared -Wl,--no-undefined"
+pcsx_rearmed_FLAGS = PLATFORM=libretro
+
 include ../../all/cores/makefile
