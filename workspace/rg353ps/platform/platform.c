@@ -886,7 +886,7 @@ void PLAT_powerOff(int reboot) {
 	exit(0);
 }
 
-int PLAT_supportsDeepSleep(void) { return 0; }
+int PLAT_supportsDeepSleep(void) { return 1; }
 
 #define LID_PATH "/sys/class/power_supply/axp2202-battery/hallkey"
 
