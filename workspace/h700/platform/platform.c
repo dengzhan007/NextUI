@@ -65,47 +65,6 @@ struct input_event {
 	int32_t value;
 };
 
-/*
- * The H700 reference platform places its power key at event0. Other kernels,
- * including the RG353PS BaseOS port, enumerate the PMIC key independently
- * (rk805 pwrkey is event1 on the RG353PS) and event numbers may change as
- * devices register. Resolve that device by its stable input name, falling back
- * to event0 only for the original H700 family.
- */
-static int find_wake_event_index(void) {
-	for (int i = 0; i < H700_INPUT_COUNT; i++) {
-		char name_path[128];
-		char name[256] = {0};
-		snprintf(name_path, sizeof(name_path),
-		         "/sys/class/input/event%i/device/name", i);
-		FILE *fp = fopen(name_path, "r");
-		if (!fp)
-			continue;
-		if (!fgets(name, sizeof(name), fp)) {
-			fclose(fp);
-			continue;
-		}
-		fclose(fp);
-		name[strcspn(name, "\\r\\n")] = '\\0';
-		if (strcmp(name, "rk805 pwrkey") == 0)
-			return i;
-	}
-	return 0;
-}
-
-static int ensure_wake_fd(void) {
-	if (wake_fd >= 0)
-		return 1;
-
-	int event_index = find_wake_event_index();
-	char path[64];
-	snprintf(path, sizeof(path), "/dev/input/event%i", event_index);
-	wake_fd = open(path, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
-	if (wake_fd >= 0)
-		LOG_info("Power-key wake monitor using %s\\n", path);
-	return wake_fd >= 0;
-}
-
 static int input_fds[H700_INPUT_COUNT];
 static uint32_t last_input_scan = 0;
 
@@ -503,12 +462,14 @@ static void poll_evdev_input(uint32_t tick) {
 	}
 }
 
-// wake_fd is a second, independent open of the physical power-key
-// event device used by PLAT_shouldWake. Keep it drained while awake so the
-// release that starts sleep is not mistaken for the next wake event.
+// wake_fd is a second, independent open of event0 used by PLAT_shouldWake.
+// It must be kept drained while awake, otherwise the power-key release that
+// triggers the next sleep is still buffered when PWR_waitForWake starts
+// polling and the device wakes back up instantly.
 static void drain_wake_fd(void) {
-	if (!ensure_wake_fd())
-		return;
+	if (wake_fd < 0)
+		wake_fd = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+	if (wake_fd < 0) return;
 
 	struct input_event event;
 	errno = 0;
@@ -735,74 +696,9 @@ int PLAT_isUSBConnected(void)
 	return connected;
 }
 
-static void write_sysfs_text(const char *path, const char *value) {
-	FILE *fp = fopen(path, "w");
-	if (!fp)
-		return;
-	fputs(value, fp);
-	fclose(fp);
-}
-
-static int read_sysfs_int(const char *path, int fallback) {
-	FILE *fp = fopen(path, "r");
-	int value = fallback;
-	if (!fp)
-		return fallback;
-	if (fscanf(fp, "%d", &value) != 1)
-		value = fallback;
-	fclose(fp);
-	return value;
-}
-
-static void set_power_indicator(int enable) {
-	const char *h700_work_led = "/sys/class/power_supply/axp2202-battery/work_led";
-	if (exists(h700_work_led)) {
-		putInt(h700_work_led, enable ? 1 : 0);
-		return;
-	}
-
-	/*
-	 * The RG353PS device tree exposes the PMIC-independent case LED through
-	 * the Linux LED class (function=power), not the H700 AXP2202 work_led ABI.
-	 * Only change a LED whose class name contains "power"; never turn off the
-	 * charging/status indicators as a side effect of screen sleep.
-	 */
-	DIR *dir = opendir("/sys/class/leds");
-	if (!dir)
-		return;
-
-	struct dirent *entry;
-	while ((entry = readdir(dir)) != NULL) {
-		if (entry->d_name[0] == '.' || !strstr(entry->d_name, "power"))
-			continue;
-
-		char trigger_path[256], brightness_path[256], max_path[256];
-		snprintf(trigger_path, sizeof(trigger_path),
-		         "/sys/class/leds/%s/trigger", entry->d_name);
-		snprintf(brightness_path, sizeof(brightness_path),
-		         "/sys/class/leds/%s/brightness", entry->d_name);
-		snprintf(max_path, sizeof(max_path),
-		         "/sys/class/leds/%s/max_brightness", entry->d_name);
-
-		if (access(brightness_path, W_OK) != 0)
-			continue;
-
-		// Detach an always-on trigger so the software brightness request sticks.
-		write_sysfs_text(trigger_path, "none\\n");
-		int brightness = enable ? read_sysfs_int(max_path, 1) : 0;
-		char value[32];
-		snprintf(value, sizeof(value), "%d\\n", brightness);
-		write_sysfs_text(brightness_path, value);
-		closedir(dir);
-		return;
-	}
-	closedir(dir);
-}
-
 void PLAT_enableBacklight(int enable) {
-	// Keep the physical power indicator in step with the UI sleep state.
-	// H700 uses AXP2202 work_led; RG353PS exposes a power LED class device.
-	set_power_indicator(enable);
+	// The power LED follows sleep/wake even when HDMI owns the display.
+	putInt("/sys/class/power_supply/axp2202-battery/work_led", enable ? 1 : 0);
 	if (GetHDMI()) return;
 
 	if (enable) {
@@ -869,8 +765,9 @@ int PLAT_shouldWake(void) {
 	if (lid.has_lid && PLAT_lidChanged(&lid_open) && lid_open)
 		return 1;
 
-	if (!ensure_wake_fd())
-		return 0;
+	if (wake_fd < 0)
+		wake_fd = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+	if (wake_fd < 0) return 0;
 
 	struct input_event event;
 	int should_wake = 0;
