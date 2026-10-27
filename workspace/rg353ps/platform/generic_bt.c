@@ -712,6 +712,14 @@ static void *watcher_thread_func(void *arg) {
     return NULL;
 }
 
+#ifdef RG353PS_DISABLE_AUDIO_DEVICE_WATCHER
+void PLAT_audioDeviceWatchRegister(void (*cb)(int device, int event)) {
+    (void)cb;
+    LOG_info("RG353PS: dynamic ALSA device watcher disabled; using startup route\\n");
+}
+void PLAT_audioDeviceWatchUnregister(void) {
+}
+#else
 void PLAT_audioDeviceWatchRegister(void (*cb)(int device, int event)) {
     if (running) return; // Already running
 
@@ -774,5 +782,6 @@ void PLAT_audioDeviceWatchUnregister(void) {
     file_watch_fd = -1;
     callback_fn = NULL;
 }
+#endif
 
 #endif /* RG353PS_DISABLE_AUDIO_DEVICE_WATCHER */
