@@ -52,6 +52,7 @@ jobs:
           sh -n skeleton/SYSTEM/rg353ps/paks/MinUI.pak/launch.sh
           sh -n skeleton/SYSTEM/rg353ps/bin/governor.sh
           sh -n skeleton/SYSTEM/rg353ps/bin/run_hooks.sh
+          sh -n skeleton/SYSTEM/rg353ps/bin/suspend
 
       - name: Build NextUI, minarch and available cores
         run: sh workspace/rg353ps/build.sh
