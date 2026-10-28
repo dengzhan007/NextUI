@@ -138,6 +138,8 @@ cp "$REPO_ROOT/skeleton/SYSTEM/rg353ps/bin/governor.sh" \
     "$BUNDLE/.system/rg353ps/bin/governor.sh"
 cp "$REPO_ROOT/skeleton/SYSTEM/rg353ps/bin/run_hooks.sh" \
     "$BUNDLE/.system/rg353ps/bin/run_hooks.sh"
+cp "$REPO_ROOT/skeleton/SYSTEM/rg353ps/bin/suspend" \
+    "$BUNDLE/.system/rg353ps/bin/suspend"
 
 for item in "FC:fceumm" "SFC:snes9x" "MD:picodrive" "PS:pcsx_rearmed"; do
     pak=${item%%:*}
@@ -168,6 +170,13 @@ Extract this archive to the user-data partition mounted by BaseOS at /mnt/SDCARD
 The archive installs .baseos/frontends/nextui/launch.sh and the .system/res and
 .system/rg353ps trees. BaseOS discovers the frontend on the next boot.
 
+The RG353PS suspend helper explicitly selects Linux `deep` sleep before requesting
+`state=mem`. Each suspend attempt writes a separate diagnostic report to
+`/mnt/boot/rg353ps-suspend-test-deep-<timestamp>.txt`; reports include the selected
+kernel sleep mode, suspend statistics, wakeup IRQ, elapsed time, and relevant kernel
+messages captured after resume. This makes a black screen alone insufficient to
+count as a successful suspend test.
+
 The bundle includes a Bootlogo.pak picker for the customizable /mnt/boot/bootlogo.bmp.
 It also includes Tools/rg353ps/Input.pak for on-screen controller testing. Button/axis
 changes are appended to /mnt/SDCARD/rg353ps-input-test.log; quit with START+SELECT.
@@ -181,6 +190,7 @@ chmod 0755 "$BUNDLE/.baseos/frontends/nextui/launch.sh" \
     "$BUNDLE/.system/rg353ps/paks/MinUI.pak/launch.sh" \
     "$BUNDLE/.system/rg353ps/bin/governor.sh" \
     "$BUNDLE/.system/rg353ps/bin/run_hooks.sh" \
+    "$BUNDLE/.system/rg353ps/bin/suspend" \
     "$BUNDLE/Tools/rg353ps/Bootlogo.pak/launch.sh" \
     "$BUNDLE/Tools/rg353ps/Bootlogo.pak/bootlogo.elf" \
     "$BUNDLE/Tools/rg353ps/Input.pak/launch.sh" \
