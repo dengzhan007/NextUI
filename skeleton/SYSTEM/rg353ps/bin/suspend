@@ -1,0 +1,152 @@
+#!/bin/sh
+# RG353PS deep-sleep entry point for NextUI on BaseOS/RK3566.
+# Each invocation creates a separate report on the FAT boot partition.
+set -u
+set +e
+exec 0<&-
+
+SYSTEM_PATH=${SYSTEM_PATH:-/mnt/SDCARD/.system/rg353ps}
+USERDATA_PATH=${USERDATA_PATH:-/mnt/SDCARD/.userdata/rg353ps}
+STAMP="$(date -u +%Y%m%d-%H%M%S 2>/dev/null)"
+[ -n "$STAMP" ] || STAMP="unknown"
+LOG_FILE="/mnt/boot/rg353ps-suspend-test-deep-$STAMP.txt"
+if [ ! -d /mnt/boot ] || [ ! -w /mnt/boot ]; then
+    mkdir -p "$USERDATA_PATH/logs" 2>/dev/null
+    LOG_FILE="$USERDATA_PATH/logs/suspend-deep-$STAMP.txt"
+fi
+mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null
+exec >>"$LOG_FILE" 2>&1
+
+log() {
+    printf '%s %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null)" "$*"
+}
+
+dump_suspend_stats() {
+    for key in success fail failed_freeze failed_prepare failed_suspend \
+        failed_suspend_late failed_suspend_noirq failed_resume \
+        failed_resume_early failed_resume_noirq last_failed_dev \
+        last_failed_errno last_failed_step; do
+        path="/sys/power/suspend_stats/$key"
+        if [ -r "$path" ]; then
+            value="$(cat "$path" 2>/dev/null)"
+            log "suspend_stats.$key=$value"
+        fi
+    done
+}
+
+log "============================================================"
+log "RG353PS deep-sleep test begin"
+log "log_file=$LOG_FILE"
+log "kernel=$(uname -a 2>/dev/null)"
+log "date=$(date -u 2>/dev/null)"
+log "system_path=$SYSTEM_PATH"
+log "state_available=$(cat /sys/power/state 2>/dev/null)"
+log "mem_sleep_before=$(cat /sys/power/mem_sleep 2>/dev/null)"
+log "pm_wakeup_irq_before=$(cat /sys/power/pm_wakeup_irq 2>/dev/null)"
+dump_suspend_stats
+
+if [ ! -w /sys/power/state ]; then
+    log "ERROR: /sys/power/state is not writable; suspend cannot be requested."
+    sync
+    exit 1
+fi
+
+mem_sleep_before="$(cat /sys/power/mem_sleep 2>/dev/null)"
+case "$mem_sleep_before" in
+    *deep*)
+        log "Selecting kernel sleep mode: deep"
+        printf 'deep' >/sys/power/mem_sleep 2>/dev/null
+        select_rc=$?
+        if [ "$select_rc" -ne 0 ]; then
+            log "ERROR: writing deep to /sys/power/mem_sleep failed (rc=$select_rc)."
+            sync
+            exit 1
+        fi
+        mem_sleep_after="$(cat /sys/power/mem_sleep 2>/dev/null)"
+        log "mem_sleep_after_select=$mem_sleep_after"
+        case "$mem_sleep_after" in
+            *'[deep]'*) log "Confirmed: deep is the selected mem_sleep mode." ;;
+            *)
+                log "ERROR: deep was available but is not shown as selected."
+                sync
+                exit 1
+                ;;
+        esac
+        ;;
+    *)
+        log "ERROR: deep sleep is not listed in /sys/power/mem_sleep."
+        sync
+        exit 1
+        ;;
+esac
+
+# Flush pending saves before entering suspend. The mixer snapshot is optional;
+# restoring it before returning lets MinUI/NextUI reinitialize audio cleanly.
+( "$SYSTEM_PATH/bin/run_hooks.sh" pre-sleep.d --sync-only ) >/dev/null 2>&1 || :
+mkdir -p /tmp/rg353ps-asound-suspend 2>/dev/null
+ASOUND_STATE="/tmp/rg353ps-asound-suspend/asound.state.pre"
+if command -v alsactl >/dev/null 2>&1; then
+    alsactl --file "$ASOUND_STATE" store >/dev/null 2>&1
+    log "alsactl_store_rc=$?"
+else
+    log "alsactl unavailable; mixer snapshot skipped."
+fi
+sync
+log "requesting state=mem with mem_sleep=deep"
+
+sleep_retval=1
+attempt=1
+max_attempts=3
+while [ "$attempt" -le "$max_attempts" ]; do
+    sleep_time="$(date +%s 2>/dev/null)"
+    [ -n "$sleep_time" ] || sleep_time=0
+    log "deep_sleep_attempt=$attempt/$max_attempts; time_before=$sleep_time"
+    printf 'mem' >/sys/power/state
+    sleep_retval=$?
+    sync
+    wake_time="$(date +%s 2>/dev/null)"
+    [ -n "$wake_time" ] || wake_time="$sleep_time"
+    elapsed=$((wake_time - sleep_time))
+    log "kernel_return_rc=$sleep_retval; time_after=$wake_time; elapsed_seconds=$elapsed"
+    log "mem_sleep_after_resume=$(cat /sys/power/mem_sleep 2>/dev/null)"
+    log "pm_wakeup_irq_after=$(cat /sys/power/pm_wakeup_irq 2>/dev/null)"
+    dump_suspend_stats
+
+    if [ "$sleep_retval" -eq 0 ]; then
+        if [ "$elapsed" -lt 2 ]; then
+            log "WARNING: suspend returned successfully but elapsed time was under 2 seconds; check immediate wake sources."
+        else
+            log "RESULT: kernel suspend request returned success after resume."
+        fi
+        break
+    fi
+
+    # Some kernels resume correctly but still report a non-zero write result.
+    if [ "$elapsed" -gt 5 ]; then
+        log "WARNING: non-zero kernel return after $elapsed seconds; treating as a resume false-negative."
+        sleep_retval=0
+        break
+    fi
+
+    if [ "$attempt" -lt "$max_attempts" ]; then
+        log "Suspend returned quickly with an error; retrying after 2 seconds."
+        sleep 2
+    fi
+    attempt=$((attempt + 1))
+done
+
+if [ -s "$ASOUND_STATE" ] && command -v alsactl >/dev/null 2>&1; then
+    alsactl --file "$ASOUND_STATE" restore >/dev/null 2>&1
+    log "alsactl_restore_rc=$?"
+fi
+if [ -x "$SYSTEM_PATH/bin/syncsettings.elf" ]; then
+    "$SYSTEM_PATH/bin/syncsettings.elf" >/dev/null 2>&1
+    log "syncsettings_rc=$?"
+fi
+( "$SYSTEM_PATH/bin/run_hooks.sh" post-resume.d ) >/dev/null 2>&1 &
+log "kernel_messages_after_resume_begin"
+dmesg 2>/dev/null | grep -iE 'suspend|resume|wakeup|PM:|rk805|rk817|gpio' | tail -n 100
+log "kernel_messages_after_resume_end"
+log "RESULT: suspend helper returning rc=$sleep_retval"
+sync
+exit "$sleep_retval"
