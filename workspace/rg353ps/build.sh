@@ -188,7 +188,7 @@ root-level .system/rg353ps runtime files.
 BaseOS discovers NextUI in the frontend selector on the next boot. The package
 ships one default profile; additional profiles can be created by copying
 default.conf with a new profile ID and display_name.
-EOF
+
 The RG353PS suspend helper explicitly selects Linux `deep` sleep before requesting
 `state=mem`. Each suspend attempt writes a separate diagnostic report to
 `/mnt/boot/rg353ps-suspend-test-deep-<timestamp>.txt`; reports include the selected
