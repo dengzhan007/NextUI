@@ -207,7 +207,7 @@ EOF
 
 [ -f "$BUNDLE/Frontends/NextUI/baseos-frontend.conf" ] && \
 [ -f "$BUNDLE/Frontends/NextUI/profiles/default.conf" ] && \
-[ -x "$BUNDLE/Frontends/NextUI/launch.sh" ] || {
+[ -f "$BUNDLE/Frontends/NextUI/launch.sh" ] || {
     echo "ERROR: BaseOS managed NextUI package is incomplete." >&2
     exit 1
 }
@@ -220,6 +220,10 @@ chmod 0755 "$BUNDLE/Frontends/NextUI/launch.sh" \
     "$BUNDLE/Tools/rg353ps/Bootlogo.pak/bootlogo.elf" \
     "$BUNDLE/Tools/rg353ps/Input.pak/launch.sh" \
     "$BUNDLE/Tools/rg353ps/Input.pak/minput.elf"
+[ -x "$BUNDLE/Frontends/NextUI/launch.sh" ] || {
+    echo "ERROR: BaseOS NextUI launcher is not executable after staging." >&2
+    exit 1
+}
 rm -f "$BUILD_OUT/baseos-rg353ps-nextui.zip" "$BUILD_OUT/baseos-rg353ps-nextui.zip.sha256"
 (cd "$BUNDLE" && zip -qr "$BUILD_OUT/baseos-rg353ps-nextui.zip" .)
 cd "$BUILD_OUT"
