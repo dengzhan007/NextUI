@@ -86,7 +86,7 @@ mkdir -p "$BUNDLE/.system/res" \
     "$BUNDLE/.system/rg353ps/bin" "$BUNDLE/.system/rg353ps/lib" \
     "$BUNDLE/.system/rg353ps/cores" "$BUNDLE/.system/rg353ps/shaders" \
     "$BUNDLE/.system/rg353ps/paks/MinUI.pak" "$BUNDLE/.system/rg353ps/paks/Emus" \
-    "$BUNDLE/.baseos/frontends/nextui" "$BUNDLE/Tools/rg353ps/Bootlogo.pak/640x480" \
+    "$BUNDLE/Frontends/NextUI/profiles" "$BUNDLE/Tools/rg353ps/Bootlogo.pak/640x480" \
     "$BUNDLE/Tools/rg353ps/Input.pak"
 
 cp "$REPO_ROOT/workspace/all/nextui/build/rg353ps/nextui.elf" \
@@ -160,16 +160,35 @@ done
     exit 1
 }
 cp "$REPO_ROOT/workspace/rg353ps/frontends/nextui/launch.sh" \
-    "$BUNDLE/.baseos/frontends/nextui/launch.sh"
+    "$BUNDLE/Frontends/NextUI/launch.sh"
+cat > "$BUNDLE/Frontends/NextUI/baseos-frontend.conf" <<'EOF'
+package_api=1
+display_name=NextUI
+priority=100
+volume_owner=system
+power_owner=system
+EOF
+cat > "$BUNDLE/Frontends/NextUI/profiles/default.conf" <<'EOF'
+profile_api=1
+display_name=NextUI
+priority=100
+EOF
 
 cat > "$BUNDLE/README-RG353PS.txt" <<'EOF'
 NextUI for BaseOS on Anbernic RG353PS
 =====================================
 
-Extract this archive to the user-data partition mounted by BaseOS at /mnt/SDCARD.
-The archive installs .baseos/frontends/nextui/launch.sh and the .system/res and
-.system/rg353ps trees. BaseOS discovers the frontend on the next boot.
+Extract this archive to the root of the user-data partition mounted by BaseOS
+at /mnt/SDCARD. The archive installs a native managed frontend package at
+Frontends/NextUI/ and the shared .system/res, .system/rg353ps and Tools/ trees.
+Keep these paths side-by-side at the card root. Do not extract the archive
+inside Frontends/ or move only the NextUI directory: the launcher uses the
+root-level .system/rg353ps runtime files.
 
+BaseOS discovers NextUI in the frontend selector on the next boot. The package
+ships one default profile; additional profiles can be created by copying
+default.conf with a new profile ID and display_name.
+EOF
 The RG353PS suspend helper explicitly selects Linux `deep` sleep before requesting
 `state=mem`. Each suspend attempt writes a separate diagnostic report to
 `/mnt/boot/rg353ps-suspend-test-deep-<timestamp>.txt`; reports include the selected
@@ -186,7 +205,13 @@ their matching core builds. GB/GBC/GBA paks and cores are intentionally omitted.
 BaseOS system boot files remain in the separate baseos-my355 repository.
 EOF
 
-chmod 0755 "$BUNDLE/.baseos/frontends/nextui/launch.sh" \
+[ -f "$BUNDLE/Frontends/NextUI/baseos-frontend.conf" ] && \
+[ -f "$BUNDLE/Frontends/NextUI/profiles/default.conf" ] && \
+[ -x "$BUNDLE/Frontends/NextUI/launch.sh" ] || {
+    echo "ERROR: BaseOS managed NextUI package is incomplete." >&2
+    exit 1
+}
+chmod 0755 "$BUNDLE/Frontends/NextUI/launch.sh" \
     "$BUNDLE/.system/rg353ps/paks/MinUI.pak/launch.sh" \
     "$BUNDLE/.system/rg353ps/bin/governor.sh" \
     "$BUNDLE/.system/rg353ps/bin/run_hooks.sh" \
